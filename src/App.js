@@ -1,7 +1,6 @@
 import React, { Component } from "react";
-import axios from 'axios';
+import http from './services/httpServices';
 import "./App.css";
-
 
 const apiEndpoint = 'https://jsonplaceholder.typicode.com/posts';
 
@@ -11,13 +10,13 @@ class App extends Component {
   };
 
   async componentDidMount() {
-    const { data : posts } = await axios.get(apiEndpoint);
+    const { data : posts } = await http.get(apiEndpoint);
     this.setState({ posts });
   }
 
   handleAdd = async () => {
     const obj = { title: 'a', body: 'b' };
-    const { data: post } = await axios.post(apiEndpoint, obj);
+    const { data: post } = await http.post(apiEndpoint, obj);
 
     const posts = [post, ...this.state.posts];
     this.setState({ posts });
@@ -25,18 +24,29 @@ class App extends Component {
 
   handleUpdate = async uppost => {
     uppost.title = 'UPDATED';
-    await axios.put(apiEndpoint + '/' + uppost.id, uppost);
+    await http.put(apiEndpoint + '/' + uppost.id, uppost);
 
     const posts = [...this.state.posts];
     const index = posts.indexOf(uppost);
     posts[index] = {...uppost};
     this.setState({posts});
-    // axios.patch(apiEndpoint + '/' + post.id, { title: post.title });
+    // http.patch(apiEndpoint + '/' + post.id, { title: post.title });
     
   };
 
-  handleDelete = delpost => {
-    console.log("Delete", delpost);
+  handleDelete = async delpost => {
+    const originalPosts = this.state.posts;
+
+    const posts = this.state.posts.filter( p => p.id !== delpost.id);
+    this.setState({ posts });
+    
+    try {
+      await http.delete(apiEndpoint + '/' + delpost.id);
+    } catch (ex) {
+      if (ex.response && ex.response.status === 404)
+        alert('This post has already been deleted.');
+      this.setState({ posts: originalPosts });
+    }
   };
 
   render() {
